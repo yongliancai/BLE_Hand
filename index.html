@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 藍牙控制介面</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #fdf4ff;
+      color: #4b0082;
+      margin: 0;
+      padding: 1rem;
+    }
+
+    h1 {
+      text-align: center;
+      color: #a78bfa;
+      font-size: 1.6rem;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      color: #6b21a8;
+    }
+
+    button {
+      background-color: #a78bfa;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 6px 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #8b5cf6;
+    }
+
+    label {
+      font-weight: 500;
+      margin-right: 8px;
+    }
+
+    #status {
+      font-weight: bold;
+      margin-top: 10px;
+      color: #4b0082;
+    }
+
+    .interval-inputs {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    input[type="number"] {
+      width: 80px;
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 1rem;
+      border: 1px solid #d1d5db;
+    }
+
+    @media (max-width: 480px) {
+      button {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      input[type="number"] {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>💜 ESP32 控制面板</h1>
+
+  <div class="card">
+    <button onclick="connect()">🔗 連線 ESP32</button>
+    <p id="status">狀態：尚未連線</p>
+  </div>
+
+  <div class="card">
+    <div class="section-title">💡 LED 控制</div>
+    <button onclick="sendCommand('on')">開燈</button>
+    <button onclick="sendCommand('off')">關燈</button>
+  </div>
+
+  <div class="card">
+    <div class="section-title">🔔 震動控制</div>
+    <button onclick="sendCommand('vibrate:on')">啟動持續震動（3秒一次）</button>
+    <button onclick="sendCommand('vibrate:off')">停止持續震動</button>
+    <br><br>
+    <button onclick="sendCommand('vibrate')">震動一次（1秒）</button>
+    <button onclick="sendCommand('vibrate:3x300ms')">震動3次，每次300ms</button>
+    <button onclick="sendCommand('vibrate:5x100ms')">震動5次，每次100ms</button>
+  </div>
+
+  <div class="card">
+    <div class="section-title">⏱ 自訂間隔震動</div>
+    <div class="interval-inputs">
+      <label for="minute">分鐘</label>
+      <input type="number" id="minute" min="0" max="60" value="0">
+      <label for="second">秒數</label>
+      <input type="number" id="second" min="0" max="60" value="0">
+    </div>
+    <button onclick="sendInterval()">✅ 設定</button>
+    <button onclick="sendCommand('interval:off')">🛑 停止</button>
+  </div>
+
+  <script>
+    let device;
+    let characteristic;
+
+    async function connect() {
+      try {
+        device = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: ['12345678-1234-1234-1234-1234567890ab']
+        });
+
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('12345678-1234-1234-1234-1234567890ab');
+        characteristic = await service.getCharacteristic('abcd1234-1234-1234-1234-abcdef123456');
+
+        document.getElementById("status").innerText = "狀態：✅ 已連線至 " + device.name;
+        console.log("✅ 已連線");
+      } catch (error) {
+        console.error("❌ 連線錯誤:", error);
+        document.getElementById("status").innerText = "狀態：❌ 連線失敗";
+      }
+    }
+
+    async function sendCommand(cmd) {
+      if (!characteristic) {
+        alert("⚠️ 請先連線藍牙裝置！");
+        return;
+      }
+
+      try {
+        const encoder = new TextEncoder();
+        await characteristic.writeValue(encoder.encode(cmd));
+        console.log("📤 已送出指令：" + cmd);
+      } catch (error) {
+        console.error("❌ 傳送失敗：", error);
+      }
+    }
+
+    function sendInterval() {
+      const m = parseInt(document.getElementById("minute").value) || 0;
+      const s = parseInt(document.getElementById("second").value) || 0;
+      const cmd = `interval:${m}m${s}s`;
+      sendCommand(cmd);
+    }
+  </script>
+</body>
+</html>
