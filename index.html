@@ -100,9 +100,24 @@
   </div>
 
   <div class="card">
-    <div class="section-title">💡 LED 控制</div>
-    <button onclick="sendCommand('on')">開燈</button>
-    <button onclick="sendCommand('off')">關燈</button>
+    <div class="section-title">⏱ 間隔震動設定</div>
+    <div class="interval-inputs">
+      <button onclick="setFixedInterval(3)">3 分鐘</button>
+      <button onclick="setFixedInterval(5)">5 分鐘</button>
+      <button onclick="setFixedInterval(6)">6 分鐘</button>
+      <button onclick="setFixedInterval(8)">8 分鐘</button>
+    </div>
+
+    <hr style="margin: 12px 0;">
+
+    <div class="interval-inputs">
+      <label for="minute">分鐘</label>
+      <input type="number" id="minute" min="0" max="60" value="0">
+      <label for="second">秒數</label>
+      <input type="number" id="second" min="0" max="60" value="0">
+    </div>
+    <button onclick="sendInterval()">✅ 自訂設定</button>
+    <button onclick="sendCommand('interval:off')">🛑 停止</button>
   </div>
 
   <div class="card">
@@ -116,15 +131,9 @@
   </div>
 
   <div class="card">
-    <div class="section-title">⏱ 自訂間隔震動</div>
-    <div class="interval-inputs">
-      <label for="minute">分鐘</label>
-      <input type="number" id="minute" min="0" max="60" value="0">
-      <label for="second">秒數</label>
-      <input type="number" id="second" min="0" max="60" value="0">
-    </div>
-    <button onclick="sendInterval()">✅ 設定</button>
-    <button onclick="sendCommand('interval:off')">🛑 停止</button>
+    <div class="section-title">💡 LED 控制</div>
+    <button onclick="sendCommand('on')">開燈</button>
+    <button onclick="sendCommand('off')">關燈</button>
   </div>
 
   <script>
@@ -160,6 +169,10 @@
         const encoder = new TextEncoder();
         await characteristic.writeValue(encoder.encode(cmd));
         console.log("📤 已送出指令：" + cmd);
+
+        // 顯示 alert 設定成功
+        alert("✅ 設定完成");
+
       } catch (error) {
         console.error("❌ 傳送失敗：", error);
       }
@@ -169,7 +182,12 @@
       const m = parseInt(document.getElementById("minute").value) || 0;
       const s = parseInt(document.getElementById("second").value) || 0;
       const cmd = `interval:${m}m${s}s`;
-      sendCommand(cmd);
+      sendCommand(cmd); // 已包含 alert
+    }
+
+    function setFixedInterval(minutes) {
+      const cmd = `interval:${minutes}m0s`;
+      sendCommand(cmd); // 已包含 alert
     }
   </script>
 </body>
